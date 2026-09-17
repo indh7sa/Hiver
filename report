@@ -1,0 +1,154 @@
+
+Report:
+[text](<../../../Downloads/hiver_final_report (1).pdf>)
+1. Executive summary
+
+GroundedCare is a brand-specific customer-support agent built for the Customer Support 
+on Twitter dataset. It performs three tasks: it assigns an incoming customer message to a 
+compact support-intent taxonomy, drafts a reply grounded in historically observed brand 
+resolutions, and decides whether the case can be auto-handled or should be escalated to a 
+human.
+The system is deliberately evaluation-first. It reconstructs multi-turn conversations, splits 
+data at the conversation level, prevents leakage into retrieval, retrieves historical resolution 
+evidence, validates structured model output, and applies deterministic escalation rules for 
+risky or account-specific cases. A response without reliable evidence is not treated as safe 
+to auto-handle.
+The project has a reproducible Python pipeline, a command-line interface, unit tests, offline 
+smoke test, leakage checks, retrieval index, golden-set sampler, baseline evaluation, LLM 
+runner, LLM-as-judge workflow, failure-analysis workflow, README, and decision log
+
+2. Problem framing and definition of good
+
+The goal is not to build a general chatbot for every brand. The goal is to build a narrow, 
+auditable support assistant for one brand. For this prototype, a good system must satisfy 
+four conditions.
+First, it must identify recurring support intents without forcing ambiguous messages into 
+an inappropriate category. Second, its reply must be supported by historical brand 
+behaviour or by a clearly safe generic troubleshooting step. Third, it must avoid making 
+account-specific, financial, security, privacy, or policy claims that cannot be justified from 
+the public conversation. Fourth, it must abstain when confidence or evidence is insufficient.
+The prototype intentionally does not send tweets, access private accounts, reset 
+passwords, issue refunds, change subscriptions, verify identity, or expose customer 
+information. These are out of scope because they require authenticated tools, operational 
+policy, and stronger safety guarantees than a dataset-only prototype can provide.
+The primary operational risk is not an awkward reply. It is an unsafe auto-handled reply in a 
+case that requires a human. Therefore, the evaluation treats unsafe auto-handling as a first
+class metric rather than hiding it inside an overall accuracy number.
+
+3. Brand selection and data audit
+
+The system compares candidate brands using customer-message volume, brand-reply 
+volume, reconstructed conversation count, reply coverage, resolved-example count, and 
+data quality indicators.The decision rule is to freeze the brand only after the full audit confirms that the selected 
+brand has sufficient recurring issues and resolved examples. If another brand is better 
+supported by the full audit, the configuration and report should be updated rather than 
+preserving SpotifyCares for consistency with the pilot
+
+4. Dataset processing and conversation reconstruction
+
+The input schema contains tweet identifiers, author identifiers, direction, creation time, 
+text, response identifiers, and parent response identifiers. The ingestion layer normalizes 
+these fields into a stable internal representation and preserves source-row traceability.
+Conversation reconstruction uses reply relationships to connect customer and brand 
+messages. A conversation is eligible for retrieval evidence only when it contains a customer 
+message and a useful later brand response. Exact duplicates and unusable messages are 
+removed or recorded in the audit trail.
+
+The full-data preparation completed sufficiently to produce the following verified split 
+artifacts:
+• 
+18,041 training conversations;
+• 
+2,577 calibration conversations;
+• 
+5,156 held-out test conversations;
+• 
+18,016 training evidence documents in the retrieval index.
+The difference between conversation count and evidence-document count is expected 
+because not every conversation contains an eligible resolved customer‒brand pair.
+
+5. Intent taxonomy
+
+The frozen taxonomy contains ten intents:
+1.
+account_access
+2.
+subscription_billing
+3.
+playback_or_app_failure
+4.
+premium_features
+5.
+content_availability
+6.
+audio_quality_or_buffering
+7.
+privacy_security_or_abuse
+8.
+cancellation_or_refund
+9.
+general_information
+10.
+unknown_or_other
+The taxonomy is intentionally compact. It is better to merge textually indistinguishable 
+categories than to create a detailed taxonomy that the model cannot reliably distinguish. 
+The 
+unknown_or_other class prevents forced classification when the message is ambiguous, 
+multi-issue, or outside the supported scope.
+Each intent configuration contains a definition, examples, inclusion rules, exclusion rules, 
+escalation defaults, and prohibited claims. The final taxonomy must be reviewed against 
+the full brand audit before the human golden set is frozen.
+
+6. System architecture
+
+The system consists of six layers.
+Ingestion and privacy layer
+This layer reads the CSV, normalizes columns, removes unusable rows, records audit 
+statistics, and redacts obvious emails, phone numbers, private identifiers, and sensitive 
+tokens before text is placed in an LLM prompt.
+Conversation layer
+This layer reconstructs customer‒brand threads and creates stable conversation identifiers. 
+Splitting occurs at conversation level rather than tweet level.
+Retrieval layer
+The system builds a hybrid retrieval index over eligible resolved examples from the training 
+split. Lexical retrieval handles exact product terms and error messages. BM25 or TF-IDF 
+similarity provides a simple reproducible baseline and supports evidence retrieval without 
+requiring an external vector database.
+Reasoning and drafting layer
+The agent predicts an intent, retrieves historical evidence, drafts a concise reply, and 
+attaches evidence IDs to material claims. Structured JSON output is validated before use.
+Policy layer
+A deterministic policy combines model confidence, retrieval quality, risk flags, account
+specific requirements, and schema validation. The LLM can explain a decision, but it cannot 
+override hard escalation rules.
+Evaluation layer
+The evaluation harness compares baselines and the proposed system on a frozen golden 
+set. It measures classification, grounding, reply quality, escalation safety, latency, and cost 
+where available. A separate judge prompt evaluates reply quality, and a human-agreement 
+workflow measures whether judge ratings align with human ratings.
+
+7. Grounded agent behaviour
+
+The agent output is structured around the following fields:
+
+JSON
+{
+}
+"intent": "playback_or_app_failure",
+"intent_confidence": 0.86,
+"reply": "...",
+"evidence_ids": ["ex_001", "ex_017"],
+"grounded_claims": ["..."],
+"risk_flags": [],
+"needs_account_specific_action": false,
+"escalate": false,
+"escalation_reason": "safe_public_troubleshooting"
+
+The validator rejects unsupported intent labels, missing evidence IDs, malformed JSON, 
+excessive reply length, unsupported claims, missing escalation reasons, and obvious 
+private information. A validation failure produces a safe escalation response rather than an 
+unverified reply.
+The deterministic escalation policy escalates cases involving security, privacy, abuse, 
+payment disputes, refunds, password or account recovery, account-specific actions, weak 
+evidence, low intent confidence, unsupported claims, multiple unresolved issues, or 
+unknown intent.

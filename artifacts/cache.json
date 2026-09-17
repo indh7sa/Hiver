@@ -1,0 +1,56 @@
+{
+  "bd4371240865ddf1ac0d5802d25aa8140b3f8a4fb27ffe90ea739660fce26225": {
+    "model": "openai/gpt-oss-20b",
+    "prompt_version": "v1.0",
+    "timestamp": 1789612512.7917898,
+    "output": {
+      "intent": "unknown_or_other",
+      "intent_confidence": 0.5,
+      "reply": "To resolve account access issues securely, please reach out via DM or visit spotify.com/password-reset.",
+      "evidence_ids": [],
+      "grounded_claims": [],
+      "risk_flags": [
+        "insufficient_evidence"
+      ],
+      "needs_account_specific_action": true,
+      "model_escalate": true,
+      "model_escalation_reason": "insufficient_historical_evidence",
+      "final_escalate": true,
+      "final_escalation_reason": "account_specific_action_required",
+      "model_id": "openai/gpt-oss-20b",
+      "prompt_version": "v1.0"
+    },
+    "latency_ms": 9692.68,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "cost_usd": 0.0,
+    "hit": false
+  },
+  "be2e89467c2e421b6d931e8475943a64cabbe79a9b2a8128cb4d374086f7e346": {
+    "model": "openai/gpt-oss-20b",
+    "prompt_version": "v1.0",
+    "timestamp": 1789612538.6987188,
+    "output": {
+      "intent": "unknown_or_other",
+      "intent_confidence": 0.5,
+      "reply": "To resolve account access issues securely, please reach out via DM or visit spotify.com/password-reset.",
+      "evidence_ids": [],
+      "grounded_claims": [],
+      "risk_flags": [
+        "insufficient_evidence"
+      ],
+      "needs_account_specific_action": true,
+      "model_escalate": true,
+      "model_escalation_reason": "insufficient_historical_evidence",
+      "final_escalate": true,
+      "final_escalation_reason": "account_specific_action_required",
+      "model_id": "openai/gpt-oss-20b",
+      "prompt_version": "v1.0"
+    },
+    "latency_ms": 2204.13,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "cost_usd": 0.0,
+    "hit": false
+  }
+}

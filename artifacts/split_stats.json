@@ -1,0 +1,9 @@
+{
+  "total_conversations": 0,
+  "train_count": 0,
+  "calib_count": 0,
+  "test_count": 0,
+  "train_ratio": 0.7,
+  "calib_ratio": 0.1,
+  "test_ratio": 0.2
+}
